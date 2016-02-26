@@ -1,0 +1,9 @@
+name: CraftUA
+author: Midnightas
+main: org.midnightas.craftukr.CraftUkr
+version: 1
+commands:
+  t:
+    description: Tribes
+  f:
+    description: Redirection to Tribes
