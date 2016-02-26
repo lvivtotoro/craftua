@@ -25,6 +25,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.server.ServerListPingEvent;
@@ -223,6 +225,18 @@ public class CraftUkr extends JavaPlugin implements Listener {
 					&& (!hovering(player.getLocation()))) {
 				Vector dir = player.getLocation().getDirection().multiply(0.25);
 				player.setVelocity(new Vector(dir.getX(), player.getVelocity().getY() * 0.5, dir.getZ()));
+			}
+		}
+	}
+
+	@EventHandler
+	public void onFallDamageEvent(EntityDamageEvent event) {
+		if (event.getEntity() instanceof Player) {
+			Player player = (Player) event.getEntity();
+			if (TribesFunction.getTribeFromPlayer(player.getUniqueId()) == TRIBE_AIR) {
+				if (event.getCause() == DamageCause.FALL) {
+					event.setDamage(event.getDamage() * 0.1);
+				}
 			}
 		}
 	}
