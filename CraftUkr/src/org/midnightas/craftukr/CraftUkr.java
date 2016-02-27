@@ -134,7 +134,8 @@ public class CraftUkr extends JavaPlugin implements Listener {
 													+ "?",
 											"Ви не зможете залишити цього племена!",
 											"Напишітьте команду щерез якщо ви впевнині.",
-											"Цей поклик показує перемоги кожної плем'ї:", "https://github.com/lvivtotoro/craftua/" });
+											"Цей поклик показує перемоги кожної плем'ї:",
+											"https://github.com/lvivtotoro/craftua/" });
 							instance.warnedPlayers.add(((Player) sender).getUniqueId());
 						}
 					} else {
@@ -143,12 +144,13 @@ public class CraftUkr extends JavaPlugin implements Listener {
 				} else {
 					sendMessageWithHeader(sender, "Є тільки 3 племена!");
 				}
-			} else if (args[0].equalsIgnoreCase("spawn")) {
-				if (getTribeFromPlayer(((Player) sender).getUniqueId()) != null) {
-					((Player) sender).teleport(deserialize(instance.config1.getString(
-							getTribeFromPlayer(((Player) sender).getUniqueId()).id + ".spawn", "0|0|0|world")));
+			} else if (args[0].equalsIgnoreCase("remove")) {
+				if (sender.hasPermission("t.remove")) {
+					Player p = Bukkit.getPlayer(args[1]);
+					TribesFunction.getTribeFromPlayer(p.getUniqueId()).members.remove(p.getUniqueId());
+					sender.sendMessage("player removed from tribe");
 				} else {
-					((Player) sender).teleport(deserialize(instance.config1.getString("spawn")));
+					sender.sendMessage("no permission.");
 				}
 			}
 			return true;
@@ -183,6 +185,15 @@ public class CraftUkr extends JavaPlugin implements Listener {
 		instance = this;
 		config = getConfig();
 		initConfigs();
+		for (String uuid : config1.getStringList("0.players")) {
+			TRIBE_EARTH.members.add(UUID.fromString(uuid));
+		}
+		for (String uuid : config1.getStringList("1.players")) {
+			TRIBE_FIRE.members.add(UUID.fromString(uuid));
+		}
+		for (String uuid : config1.getStringList("2.players")) {
+			TRIBE_AIR.members.add(UUID.fromString(uuid));
+		}
 		Bukkit.getPluginManager().registerEvents(this, this);
 		damageFireUnderwater = new BukkitRunnable() {
 			@Override
@@ -213,16 +224,24 @@ public class CraftUkr extends JavaPlugin implements Listener {
 		getCommand("t").setExecutor(new TribesFunction());
 		getCommand("t").setAliases(Arrays.asList("tribes"));
 		getCommand("f").setExecutor(new FactionsFunction());
-		getCommand("spawn").setExecutor(new CommandExecutor() {
-			@Override
-			public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
-				((Player) sender).chat("/t spawn");
-				return true;
-			}
-		});
 	}
 
 	public void onDisable() {
+		List<String> tribe0 = new ArrayList<String>();
+		List<String> tribe1 = new ArrayList<String>();
+		List<String> tribe2 = new ArrayList<String>();
+		for (UUID id : TRIBE_EARTH.members) {
+			tribe0.add(id.toString());
+		}
+		for (UUID id : TRIBE_FIRE.members) {
+			tribe1.add(id.toString());
+		}
+		for (UUID id : TRIBE_AIR.members) {
+			tribe2.add(id.toString());
+		}
+		config1.set("0.players", tribe0);
+		config1.set("1.players", tribe1);
+		config1.set("2.players", tribe2);
 		saveConfig();
 		saveConfigs();
 	}
