@@ -1,5 +1,4 @@
 ![MC Version](https://img.shields.io/badge/mc-1.7.10-blue.svg?style=flat-square) ![Server Type](https://img.shields.io/badge/server--type-KCouldron-red.svg?style=flat-square)
-
 # CraftUA
 Вітаємо вас до CraftUA.  
 Це є сервер для Українців.  
