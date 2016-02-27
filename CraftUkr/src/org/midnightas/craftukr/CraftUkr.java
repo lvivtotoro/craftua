@@ -134,7 +134,7 @@ public class CraftUkr extends JavaPlugin implements Listener {
 													+ "?",
 											"Ви не зможете залишити цього племена!",
 											"Напишітьте команду щерез якщо ви впевнині.",
-											"Цей поклик показує перемоги кожної плем'ї:", "ПОКЛИК ТУТ" });
+											"Цей поклик показує перемоги кожної плем'ї:", "https://github.com/lvivtotoro/craftua/" });
 							instance.warnedPlayers.add(((Player) sender).getUniqueId());
 						}
 					} else {
@@ -177,6 +177,7 @@ public class CraftUkr extends JavaPlugin implements Listener {
 	public List<UUID> earthCooldown = new ArrayList<UUID>();
 
 	public BukkitRunnable damageFireUnderwater;
+	public BukkitRunnable damageAirInCaves;
 
 	public void onEnable() {
 		instance = this;
@@ -195,7 +196,20 @@ public class CraftUkr extends JavaPlugin implements Listener {
 				}
 			}
 		};
-		damageFireUnderwater.runTaskTimer(this, 20, 10);
+		damageFireUnderwater.runTaskTimer(this, 20, 20);
+		damageAirInCaves = new BukkitRunnable() {
+			@Override
+			public void run() {
+				for (Player p : Bukkit.getOnlinePlayers()) {
+					if (TribesFunction.getTribeFromPlayer(p.getUniqueId()) == TRIBE_AIR) {
+						if (p.getLocation().getBlockY() < 16) {
+							p.damage(5);
+						}
+					}
+				}
+			}
+		};
+		damageAirInCaves.runTaskTimer(this, 0, 20 * 60);
 		getCommand("t").setExecutor(new TribesFunction());
 		getCommand("t").setAliases(Arrays.asList("tribes"));
 		getCommand("f").setExecutor(new FactionsFunction());
@@ -266,28 +280,30 @@ public class CraftUkr extends JavaPlugin implements Listener {
 	public void onRightClickBlock(PlayerInteractEvent event) {
 		Tribe tribe = TribesFunction.getTribeFromPlayer(event.getPlayer().getUniqueId());
 		if (tribe == TRIBE_FIRE) {
-			if (!event.getPlayer().isSneaking() && event.getAction() == Action.RIGHT_CLICK_BLOCK) {
-				Material material = event.getClickedBlock().getType();
-				if (material == Material.IRON_ORE) {
-					event.getClickedBlock().setType(Material.AIR);
-					event.getClickedBlock().getWorld().dropItemNaturally(event.getClickedBlock().getLocation(),
-							new ItemStack(Material.IRON_INGOT, 1));
-				} else if (material == Material.GOLD_ORE) {
-					event.getClickedBlock().setType(Material.AIR);
-					event.getClickedBlock().getWorld().dropItemNaturally(event.getClickedBlock().getLocation(),
-							new ItemStack(Material.GOLD_INGOT, 1));
+			if (event.getAction() == Action.RIGHT_CLICK_BLOCK) {
+				if (!event.getPlayer().isSneaking()) {
+					Material material = event.getClickedBlock().getType();
+					if (material == Material.IRON_ORE) {
+						event.getClickedBlock().setType(Material.AIR);
+						event.getClickedBlock().getWorld().dropItemNaturally(event.getClickedBlock().getLocation(),
+								new ItemStack(Material.IRON_INGOT, 1));
+					} else if (material == Material.GOLD_ORE) {
+						event.getClickedBlock().setType(Material.AIR);
+						event.getClickedBlock().getWorld().dropItemNaturally(event.getClickedBlock().getLocation(),
+								new ItemStack(Material.GOLD_INGOT, 1));
+					}
+				} else {
+					if (!day(event.getPlayer().getWorld()))
+						event.getClickedBlock().getRelative(BlockFace.UP).setType(Material.FIRE);
 				}
-			} else {
-				if (!day(event.getPlayer().getWorld()) && event.getAction() == Action.RIGHT_CLICK_BLOCK)
-					event.getClickedBlock().getRelative(BlockFace.UP).setType(Material.FIRE);
 			}
 		} else if (tribe == TRIBE_EARTH) {
-			if (event.getPlayer().isSneaking() && event.getAction() == Action.RIGHT_CLICK_BLOCK &&
-					!earthCooldown.contains(event.getPlayer().getUniqueId())) {
+			if (event.getPlayer().isSneaking() && event.getAction() == Action.RIGHT_CLICK_BLOCK
+					&& !earthCooldown.contains(event.getPlayer().getUniqueId())) {
 				final Player player = event.getPlayer();
-				double startX = 0.0D;
-				double startY = 0.0D;
-				double startZ = 0.0D;
+				double startX = player.getLocation().getBlockX() - 1;
+				double startY = player.getLocation().getBlockY() - 1;
+				double startZ = player.getLocation().getBlockZ() - 1;
 				World world = player.getWorld();
 				Material material = Material.BEDROCK;
 				for (int x = 0; x < 3; x++) {
@@ -307,9 +323,9 @@ public class CraftUkr extends JavaPlugin implements Listener {
 				earthCooldown.add(player.getUniqueId());
 				new BukkitRunnable() {
 					public void run() {
-						double startX = 0.0D;
-						double startY = 0.0D;
-						double startZ = 0.0D;
+						double startX = player.getLocation().getBlockX() - 1;
+						double startY = player.getLocation().getBlockY() - 1;
+						double startZ = player.getLocation().getBlockZ() - 1;
 						World world = player.getWorld();
 						Material material = Material.AIR;
 						for (int x = 0; x < 3; x++) {

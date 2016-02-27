@@ -5,5 +5,6 @@ version: 1
 commands:
   t:
     description: Tribes
+    aliases: ["tribes"]
   f:
     description: Redirection to Tribes
