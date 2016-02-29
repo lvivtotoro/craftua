@@ -12,6 +12,7 @@ import java.util.UUID;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Chunk;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -27,8 +28,12 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
+import org.bukkit.event.player.AsyncPlayerChatEvent;
+import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
@@ -41,25 +46,27 @@ import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
+import ru.tehkode.permissions.bukkit.PermissionsEx;
+
 public class CraftUkr extends JavaPlugin implements Listener {
 
 	public static class FactionsFunction implements CommandExecutor {
 		@Override
 		public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
 			TribesFunction.sendMessageWithHeader(sender,
-					new String[] { "Тут Фракції не підтримуються.", "Замість Фракції є Плем'ї:", "/t або /tribes" });
+					new String[] { "РўСѓС‚ Р¤СЂР°РєС†С–С— РЅРµ РїС–РґС‚СЂРёРјСѓСЋС‚СЊСЃСЏ.", "Р—Р°РјС–СЃС‚СЊ Р¤СЂР°РєС†С–С— С” РџР»РµРј'С—:", "/t Р°Р±Рѕ /tribes" });
 			return true;
 		}
 	}
 
 	public static class TribesFunction implements CommandExecutor {
 		public static void sendMessageWithHeader(CommandSender sender, String string) {
-			sender.sendMessage(new String[] { _c + "===" + _7 + " Плем'я " + _c + "===", string });
+			sender.sendMessage(new String[] { _c + "===" + _7 + " РџР»РµРј'СЏ " + _c + "===", string });
 		}
 
 		public static void sendMessageWithHeader(CommandSender sender, String[] string) {
 			List<String> lines = new LinkedList<String>(Arrays.asList(string));
-			lines.add(0, _c + "===" + _7 + " Плем'я " + _c + "===");
+			lines.add(0, _c + "===" + _7 + " РџР»РµРј'СЏ " + _c + "===");
 			sender.sendMessage(lines.toArray(new String[lines.size()]));
 		}
 
@@ -87,6 +94,17 @@ public class CraftUkr extends JavaPlugin implements Listener {
 			return null;
 		}
 
+		public static String getPrefixFromTribe(Tribe tribe) {
+			String prefix = "&7[&2Solo&7] ";
+			if (tribe == instance.TRIBE_EARTH)
+				prefix = "&7[&6Р—РµРјР»СЏ&7] ";
+			else if (tribe == instance.TRIBE_FIRE)
+				prefix = "&7[&cР’РѕРіРѕРЅСЊ&7] ";
+			else if (tribe == instance.TRIBE_AIR)
+				prefix = "&7[&fРџРѕРІС–С‚СЂСЏ&7] ";
+			return prefix.replace("&", "В§");
+		}
+
 		@Override
 		public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
 			if (!(sender instanceof Player)) {
@@ -97,15 +115,15 @@ public class CraftUkr extends JavaPlugin implements Listener {
 				try {
 					id = Integer.parseInt(args[1]);
 				} catch (NumberFormatException exception) {
-					if (args[1].toLowerCase().startsWith("e") || args[1].toLowerCase().startsWith("з")) {
+					if (args[1].toLowerCase().startsWith("e") || args[1].toLowerCase().startsWith("Р·")) {
 						id = 0;
-					} else if (args[1].toLowerCase().startsWith("f") || args[1].toLowerCase().startsWith("в")) {
+					} else if (args[1].toLowerCase().startsWith("f") || args[1].toLowerCase().startsWith("РІ")) {
 						id = 1;
-					} else if (args[1].toLowerCase().startsWith("a") || args[1].toLowerCase().startsWith("п")) {
+					} else if (args[1].toLowerCase().startsWith("a") || args[1].toLowerCase().startsWith("Рї")) {
 						id = 2;
 					} else {
-						sendMessageWithHeader(sender, new String[] { _c + "Є тільки 3 племена:", _e + "1 - Земля",
-								_e + "2 - Вогонь", _e + "3 - Повітря", });
+						sendMessageWithHeader(sender, new String[] { _c + "Р„ С‚С–Р»СЊРєРё 3 РїР»РµРјРµРЅР°:", _e + "1 - Р—РµРјР»СЏ",
+								_e + "2 - Р’РѕРіРѕРЅСЊ", _e + "3 - РџРѕРІС–С‚СЂСЏ", });
 						return true;
 					}
 				}
@@ -114,7 +132,7 @@ public class CraftUkr extends JavaPlugin implements Listener {
 						if (instance.warnedPlayers.contains(((Player) sender).getUniqueId())) {
 							instance.TRIBES[id - 1].members.add(((Player) sender).getUniqueId());
 							sendMessageWithHeader(sender,
-									new String[] { _c + "Вітаємо вас до племена:", _b + instance.TRIBES[id - 1].name });
+									new String[] { _c + "Р’С–С‚Р°С”РјРѕ РІР°СЃ РґРѕ РїР»РµРјРµРЅР°:", _b + instance.TRIBES[id - 1].name });
 							instance.warnedPlayers.remove(((Player) sender).getUniqueId());
 							if (!instance.config0.contains(((Player) sender).getUniqueId() + "")
 									|| !instance.config0.getStringList(((Player) sender).getUniqueId() + "")
@@ -127,22 +145,43 @@ public class CraftUkr extends JavaPlugin implements Listener {
 									((Player) sender).getInventory().addItem(deserializeItem(s));
 								instance.giveEffects((Player) sender);
 							}
+							Player player = (Player) sender;
+							player.setFallDistance(-100.0F);
+							World world = Bukkit.getWorld("world");
+							int x = 0;
+							int y = 110;
+							int z = 0;
+							while(true) {
+								x = (int) (Math.random() * Short.MAX_VALUE);
+								z = (int) (Math.random() * Short.MAX_VALUE);
+								Material mat = world.getHighestBlockAt(x, z).getType();
+								if(mat != Material.WATER || mat != Material.STATIONARY_WATER) {
+									break;
+								}
+							}
+							Location teleportLocation = new Location(world, x, y, z);
+							player.teleport(teleportLocation);
+							teleportLocation.getWorld().refreshChunk(teleportLocation.getChunk().getX(),
+									teleportLocation.getChunk().getZ());
+							player.setFallDistance(0.0F);
+							player.removePotionEffect(PotionEffectType.DAMAGE_RESISTANCE);
+							player.addPotionEffect(new PotionEffect(PotionEffectType.DAMAGE_RESISTANCE, 20 * 20, 200));
 						} else {
 							sendMessageWithHeader(sender,
 									new String[] {
-											"Ви точно хочете брати участь у племені " + instance.TRIBES[id - 1].name
+											"Р’Рё С‚РѕС‡РЅРѕ С…РѕС‡РµС‚Рµ Р±СЂР°С‚Рё СѓС‡Р°СЃС‚СЊ Сѓ РїР»РµРјРµРЅС– " + instance.TRIBES[id - 1].name
 													+ "?",
-											"Ви не зможете залишити цього племена!",
-											"Напишітьте команду щерез якщо ви впевнині.",
-											"Цей поклик показує перемоги кожної плем'ї:",
+											"Р’Рё РЅРµ Р·РјРѕР¶РµС‚Рµ Р·Р°Р»РёС€РёС‚Рё С†СЊРѕРіРѕ РїР»РµРјРµРЅР°!",
+											"РќР°РїРёС€С–С‚СЊС‚Рµ РєРѕРјР°РЅРґСѓ С‰РµСЂРµР· СЏРєС‰Рѕ РІРё РІРїРµРІРЅРёРЅС–.",
+											"Р¦РµР№ РїРѕРєР»РёРє РїРѕРєР°Р·СѓС” РїРµСЂРµРјРѕРіРё РєРѕР¶РЅРѕС— РїР»РµРј'С—:",
 											"https://github.com/lvivtotoro/craftua/" });
 							instance.warnedPlayers.add(((Player) sender).getUniqueId());
 						}
 					} else {
-						sendMessageWithHeader(sender, new String[] { _c + "Ви вже є у племені!" });
+						sendMessageWithHeader(sender, new String[] { _c + "Р’Рё РІР¶Рµ С” Сѓ РїР»РµРјРµРЅС–!" });
 					}
 				} else {
-					sendMessageWithHeader(sender, "Є тільки 3 племена!");
+					sendMessageWithHeader(sender, "Р„ С‚С–Р»СЊРєРё 3 РїР»РµРјРµРЅР°!");
 				}
 			} else if (args[0].equalsIgnoreCase("remove")) {
 				if (sender.hasPermission("t.remove")) {
@@ -171,9 +210,9 @@ public class CraftUkr extends JavaPlugin implements Listener {
 	public static FileConfiguration config;
 	private static CraftUkr instance;
 
-	public Tribe TRIBE_EARTH = new Tribe("Земля", 0);
-	public Tribe TRIBE_FIRE = new Tribe("Вогонь", 1);
-	public Tribe TRIBE_AIR = new Tribe("Повітря", 2);
+	public Tribe TRIBE_EARTH = new Tribe("Р—РµРјР»СЏ", 0);
+	public Tribe TRIBE_FIRE = new Tribe("Р’РѕРіРѕРЅСЊ", 1);
+	public Tribe TRIBE_AIR = new Tribe("РџРѕРІС–С‚СЂСЏ", 2);
 	public Tribe[] TRIBES = new Tribe[] { TRIBE_EARTH, TRIBE_FIRE, TRIBE_AIR };
 	public List<UUID> warnedPlayers = new ArrayList<UUID>();
 	public List<UUID> earthCooldown = new ArrayList<UUID>();
@@ -248,10 +287,52 @@ public class CraftUkr extends JavaPlugin implements Listener {
 
 	@EventHandler
 	public void motd(ServerListPingEvent e) {
-		String[] motds = new String[] { "Провідний Український сервер.", "Купа модифікацій!" };
-		e.setMotd(_c + "" + _l + "Крафт" + _e + "UA " + _7 + "- " + _e + choose(motds));
+		String[] motds = new String[] { "РџСЂРѕРІС–РґРЅРёР№ РЈРєСЂР°С—РЅСЃСЊРєРёР№ СЃРµСЂРІРµСЂ.", "РљСѓРїР° РјРѕРґРёС„С–РєР°С†С–Р№!" };
+		e.setMotd(_c + "" + _l + "РљСЂР°С„С‚" + _e + "UA " + _7 + "- " + _e + choose(motds));
 	}
 
+	@EventHandler
+	public void chatEvent(AsyncPlayerChatEvent event) {
+		event.setFormat(
+				TribesFunction.getPrefixFromTribe(TribesFunction.getTribeFromPlayer(event.getPlayer().getUniqueId()))
+						+ event.getFormat());
+	}
+	
+	@EventHandler
+	public void onEntityInteractEvent(PlayerInteractEntityEvent event) {
+		if(event.getPlayer().getWorld().getName().equalsIgnoreCase("spawnworld") && PermissionsEx.getUser(event.getPlayer()).getRank("default") > 100) {
+			event.setCancelled(true);
+		}
+	}
+	
+	@EventHandler
+	public void onPlayerInteractEvent(PlayerInteractEvent event) {
+		if(event.getPlayer().getWorld().getName().equalsIgnoreCase("spawnworld") && PermissionsEx.getUser(event.getPlayer()).getRank("default") > 100) {
+			event.setCancelled(true);
+		}
+	}
+	
+	@EventHandler
+	public void onBlockBreakEvent(BlockBreakEvent event) {
+		if(event.getPlayer().getWorld().getName().equalsIgnoreCase("spawnworld") && PermissionsEx.getUser(event.getPlayer()).getRank("default") > 100) {
+			event.setCancelled(true);
+		}
+	}
+	
+	@EventHandler
+	public void onPlayerMoveEvent2(PlayerMoveEvent event) {
+		if(event.getPlayer().getWorld().getName().equalsIgnoreCase("spawnworld") && PermissionsEx.getUser(event.getPlayer()).getRank("default") > 100) {
+			event.getPlayer().setFlying(false);
+		}
+	}
+	
+	@EventHandler
+	public void onBlockPlaceEvent(BlockPlaceEvent event) {
+		if(event.getPlayer().getWorld().getName().equalsIgnoreCase("spawnworld") && PermissionsEx.getUser(event.getPlayer()).getRank("default") > 100) {
+			event.setCancelled(true);
+		}
+	}
+	
 	public void initConfigs() {
 		config0f = new File(getDataFolder(), "first_time_config.yml");
 		config0 = YamlConfiguration.loadConfiguration(config0f);
@@ -278,8 +359,12 @@ public class CraftUkr extends JavaPlugin implements Listener {
 	}
 
 	@EventHandler
-	public void onPlayerRespawnEvent(PlayerRespawnEvent event) {
-		giveEffects(event.getPlayer());
+	public void onPlayerRespawnEvent(final PlayerRespawnEvent event) {
+		Bukkit.getScheduler().runTaskLater(this, new Runnable() {
+			public void run() {
+				giveEffects(event.getPlayer());
+			}
+		}, 10);
 	}
 
 	public void giveEffects(Player player) {
@@ -320,9 +405,9 @@ public class CraftUkr extends JavaPlugin implements Listener {
 			if (event.getPlayer().isSneaking() && event.getAction() == Action.RIGHT_CLICK_BLOCK
 					&& !earthCooldown.contains(event.getPlayer().getUniqueId())) {
 				final Player player = event.getPlayer();
-				double startX = player.getLocation().getBlockX() - 1;
-				double startY = player.getLocation().getBlockY() - 1;
-				double startZ = player.getLocation().getBlockZ() - 1;
+				final double startX = player.getLocation().getBlockX() - 1;
+				final double startY = player.getLocation().getBlockY() - 1;
+				final double startZ = player.getLocation().getBlockZ() - 1;
 				World world = player.getWorld();
 				Material material = Material.BEDROCK;
 				for (int x = 0; x < 3; x++) {
@@ -342,9 +427,6 @@ public class CraftUkr extends JavaPlugin implements Listener {
 				earthCooldown.add(player.getUniqueId());
 				new BukkitRunnable() {
 					public void run() {
-						double startX = player.getLocation().getBlockX() - 1;
-						double startY = player.getLocation().getBlockY() - 1;
-						double startZ = player.getLocation().getBlockZ() - 1;
 						World world = player.getWorld();
 						Material material = Material.AIR;
 						for (int x = 0; x < 3; x++) {
